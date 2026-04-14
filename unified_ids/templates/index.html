@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IDS — Unified Intrusion Detection</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Bebas+Neue&family=DM+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #f5f7fa;
+  --surface:   #ffffff;
+  --surface2:  #f0f3f8;
+  --border:    #e1e8f0;
+  --border2:   #d4dce8;
+  --cyan:      #0066cc;
+  --orange:    #ff7a3d;
+  --green:     #00a86b;
+  --red:       #d32f2f;
+  --yellow:    #ff9800;
+  --text:      #1a1a1a;
+  --muted:     #666666;
+  --muted2:    #999999;
+  --mono:      'IBM Plex Mono', monospace;
+  --display:   'Bebas Neue', sans-serif;
+  --body:      'DM Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── layout ── */
+.shell {
+  position: relative; z-index: 1;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 100vh;
+}
+
+/* ── sidebar ── */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 2.5rem 1.5rem;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.logo {
+  padding: 0 0 2rem;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 2rem;
+}
+.logo-top {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--cyan);
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+}
+.logo-main {
+  font-family: var(--display);
+  font-size: 2.8rem;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  color: var(--text);
+  font-weight: 700;
+}
+.logo-main span { color: var(--cyan); }
+
+.sidebar-section {
+  padding: 1.2rem 0 0.6rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* model cards in sidebar */
+.model-card {
+  margin: 0.5rem 0;
+  padding: 1.2rem;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+  background: var(--surface2);
+}
+.model-card::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: transparent;
+  transition: background 0.25s;
+}
+.model-card:hover { 
+  border-color: var(--cyan);
+  background: var(--surface);
+  transform: translateX(4px);
+}
+.model-card.active { 
+  border-color: var(--cyan);
+  background: rgba(0,102,204,0.08);
+  box-shadow: 0 2px 8px rgba(0,102,204,0.12);
+}
+.model-card.active::before { background: var(--cyan); }
+
+.model-card-tag {
+  font-family: var(--mono); font-size: 0.65rem;
+  letter-spacing: 0.12em; color: var(--muted2);
+  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+}
+.model-card-name { font-size: 1.05rem; font-weight: 700; color: var(--text); }
+.model-card-feat {
+  font-family: var(--mono); font-size: 0.7rem;
+  color: var(--cyan); margin-top: 0.5rem;
+}
+.model-card-status {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-family: var(--mono); font-size: 0.65rem;
+  color: var(--green); margin-top: 0.6rem;
+}
+.model-card-status .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green);
+  animation: blink 1.4s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* presets in sidebar */
+.preset-list { 
+  padding: 0.8rem 0 1.2rem; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 0.5rem; 
+}
+.preset-btn {
+  font-family: var(--body); font-size: 0.85rem; letter-spacing: 0;
+  padding: 0.7rem 1rem; 
+  background: var(--surface2);
+  border: 1.5px solid var(--border); 
+  color: var(--text);
+  cursor: pointer; 
+  border-radius: 5px; 
+  text-align: left;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+.preset-btn:hover { 
+  border-color: var(--cyan); 
+  color: var(--cyan); 
+  background: rgba(0,102,204,0.06);
+  transform: translateX(3px);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 1.5rem;
+  border-top: 1.5px solid var(--border);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+/* ── main ── */
+.main {
+  display: flex;
+  flex-direction: column;
+  padding: 3rem 2.5rem 4rem;
+  gap: 2.5rem;
+}
+
+/* ── top bar ── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem;
+}
+.page-title { 
+  font-family: var(--display); 
+  font-size: 2.8rem; 
+  letter-spacing: 0.08em; 
+  color: var(--text); 
+  font-weight: 700;
+}
+.page-title span { color: var(--cyan); }
+
+.status-pills { 
+  display: flex; 
+  gap: 0.8rem; 
+  flex-wrap: wrap; 
+}
+.pill {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.08em;
+  padding: 0.5rem 1rem; 
+  border-radius: 4px;
+  border: 1.5px solid var(--border); 
+  color: var(--muted2);
+  background: var(--surface2);
+  font-weight: 600;
+}
+.pill.ok { 
+  border-color: #00a86b; 
+  color: var(--green); 
+  background: rgba(0,168,107,0.08);
+}
+.pill.err { 
+  border-color: #d32f2f; 
+  color: var(--red); 
+  background: rgba(211,47,47,0.08);
+}
+.pill-dot { 
+  width: 6px; height: 6px; border-radius: 50%; background: currentColor;
+}
+
+/* ── form card ── */
+.card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.5rem 1.8rem;
+  border-bottom: 1.5px solid var(--border);
+  background: var(--surface2);
+}
+.card-header-left { display: flex; align-items: center; gap: 1rem; }
+.card-tag {
+  font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.12em;
+  color: var(--cyan);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.card-model-badge {
+  font-family: var(--body); font-size: 0.8rem; letter-spacing: 0;
+  padding: 0.4rem 1rem; 
+  border: 1.5px solid var(--cyan);
+  color: var(--cyan); 
+  border-radius: 4px;
+  font-weight: 600;
+}
+.feat-count {
+  font-family: var(--mono); font-size: 0.75rem;
+  color: var(--muted); letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.card-body { padding: 2rem; }
+
+/* ── feature grid ── */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.2rem;
+}
+.field label {
+  display: block;
+  font-family: var(--body); font-size: 0.85rem;
+  color: var(--text); letter-spacing: 0;
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.field input, .field select {
+  width: 100%;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  color: var(--text);
+  padding: 0.7rem 0.9rem;
+  font-family: var(--body);
+  font-size: 0.9rem;
+  border-radius: 5px; 
+  outline: none;
+  transition: all 0.2s;
+}
+.field input:focus, .field select:focus { 
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(0,102,204,0.1);
+}
+
+/* ── submit row ── */
+.submit-row {
+  display: flex; align-items: center; gap: 1.2rem;
+  margin-top: 2rem; padding-top: 2rem;
+  border-top: 1.5px solid var(--border);
+  flex-wrap: wrap;
+}
+.btn-run {
+  font-family: var(--body); font-size: 0.9rem; letter-spacing: 0;
+  padding: 0.85rem 2.5rem;
+  background: var(--cyan); color: #fff;
+  border: none; cursor: pointer; border-radius: 5px; font-weight: 700;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  position: relative; overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,102,204,0.25);
+}
+.btn-run::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.3), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.4s;
+}
+.btn-run:hover::after { transform: translateX(100%); }
+.btn-run:hover { 
+  background: var(--cyan); 
+  box-shadow: 0 4px 16px rgba(0,102,204,0.4);
+  transform: translateY(-2px);
+}
+.btn-run:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-clear {
+  font-family: var(--body); font-size: 0.9rem; letter-spacing: 0;
+  padding: 0.85rem 1.8rem; 
+  background: var(--surface2);
+  border: 1.5px solid var(--border); 
+  color: var(--text);
+  cursor: pointer; 
+  border-radius: 5px;
+  transition: all 0.2s;
+  font-weight: 600;
+}
+.btn-clear:hover { 
+  border-color: var(--cyan); 
+  color: var(--cyan);
+  background: rgba(0,102,204,0.06);
+}
+
+.err-msg {
+  font-family: var(--body); font-size: 0.85rem;
+  color: var(--red);
+  font-weight: 600;
+}
+
+.spinner {
+  display: inline-block; width: 18px; height: 18px;
+  border: 2.5px solid var(--border);
+  border-top-color: var(--cyan);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg) } }
+
+/* ── result ── */
+#result { display: none; animation: fadein 0.3s ease; }
+@keyframes fadein { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:none } }
+
+.result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+
+.result-main {
+  padding: 2.5rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  position: relative; 
+  overflow: hidden;
+}
+.result-main.attack { 
+  border-color: var(--red); 
+  background: rgba(211,47,47,0.08);
+}
+.result-main.normal { 
+  border-color: var(--green); 
+  background: rgba(0,168,107,0.08);
+}
+.result-main::before {
+  content: attr(data-verdict);
+  position: absolute; right: -1rem; top: -1.5rem;
+  font-family: var(--display); font-size: 7rem; letter-spacing: 0.05em;
+  opacity: 0.08; color: currentColor; pointer-events: none; line-height: 1;
+}
+.result-main.attack { color: var(--red); }
+.result-main.normal { color: var(--green); }
+
+.verdict-label {
+  font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.15em;
+  margin-bottom: 0.8rem; color: var(--muted2);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.verdict-text {
+  font-family: var(--display); font-size: 3.5rem; letter-spacing: 0.1em;
+  line-height: 1; color: currentColor; font-weight: 700;
+}
+
+.risk-badge {
+  display: inline-block; margin-top: 1.2rem;
+  font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.12em;
+  padding: 0.5rem 1.2rem; 
+  border: 1.5px solid currentColor;
+  border-radius: 4px; 
+  color: currentColor;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.result-stats {
+  padding: 2.5rem;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  display: flex; 
+  flex-direction: column; 
+  gap: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.stat-row { display: flex; flex-direction: column; gap: 0.6rem; }
+.stat-label {
+  font-family: var(--body); font-size: 0.8rem; letter-spacing: 0;
+  color: var(--muted); 
+  display: flex; 
+  justify-content: space-between;
+  font-weight: 600;
+}
+.stat-label strong { color: var(--text); font-weight: 700; }
+.bar-track { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 3px; transition: width 0.7s cubic-bezier(0.4,0,0.2,1); }
+
+.stat-info {
+  font-family: var(--body); font-size: 0.8rem;
+  color: var(--muted); line-height: 1.8;
+}
+.stat-info strong { color: var(--text); font-weight: 700; }
+
+/* ── responsive ── */
+@media (max-width: 900px) {
+  .shell { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; flex-direction: row; flex-wrap: wrap; padding: 1.5rem; gap: 1.5rem; }
+  .logo { border-bottom: none; padding: 0; margin-bottom: 0; }
+  .result-grid { grid-template-columns: 1fr; }
+  .main { padding: 2rem 1.5rem; }
+}
+@media (max-width: 600px) {
+  .form-grid { grid-template-columns: 1fr 1fr; }
+  .main { padding: 1.5rem 1rem 3rem; }
+  .page-title { font-size: 2rem; }
+  .result-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-top">UNIFIED SYSTEM v2.0</div>
+      <div class="logo-main">I<span>D</span>S</div>
+    </div>
+
+    <div class="sidebar-section">ACTIVE MODELS</div>
+    <div id="modelList"></div>
+
+    <div class="sidebar-section">QUICK PRESETS</div>
+    <div class="preset-list">
+      <button class="preset-btn" onclick="loadPreset('normal')">▷ Normal Traffic</button>
+      <button class="preset-btn" onclick="loadPreset('dos')">▷ DoS / Flood Attack</button>
+      <button class="preset-btn" onclick="loadPreset('portscan')">▷ Port Scan</button>
+      <button class="preset-btn" onclick="clearForm()">✕ Clear All Fields</button>
+    </div>
+
+    <div class="sidebar-footer">
+      <div>NSL-KDD · CIC-IDS2017</div>
+      <div>TensorFlow / Keras</div>
+      <div style="margin-top:.5rem;color:var(--cyan)">localhost:5000</div>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <main class="main">
+
+    <!-- top bar -->
+    <div class="topbar">
+      <div class="page-title">TRAFFIC <span>ANALYZER</span></div>
+      <div class="status-pills" id="statusPills"></div>
+    </div>
+
+    <!-- form card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-left">
+          <span class="card-tag">INPUT FEATURES</span>
+          <span class="card-model-badge" id="activeBadge">—</span>
+        </div>
+        <span class="feat-count" id="featCount"></span>
+      </div>
+      <div class="card-body">
+        <div class="form-grid" id="formGrid"></div>
+        <div class="submit-row">
+          <button class="btn-run" id="runBtn" onclick="analyze()">▶ RUN ANALYSIS</button>
+          <button class="btn-clear" onclick="clearForm()">CLEAR</button>
+          <span id="spinnerWrap" style="display:none"><span class="spinner"></span></span>
+          <span class="err-msg" id="errMsg"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- result -->
+    <div id="result">
+      <div class="result-grid">
+        <div class="result-main" id="resultMain" data-verdict="">
+          <div class="verdict-label">CLASSIFICATION RESULT</div>
+          <div class="verdict-text" id="verdictText"></div>
+          <div class="risk-badge" id="riskBadge"></div>
+        </div>
+        <div class="result-stats">
+          <div class="stat-row">
+            <div class="stat-label">
+              <span>ATTACK PROBABILITY</span>
+              <strong id="probVal"></strong>
+            </div>
+            <div class="bar-track"><div class="bar-fill" id="probBar"></div></div>
+          </div>
+          <div class="stat-row">
+            <div class="stat-label">
+              <span>CONFIDENCE</span>
+              <strong id="confVal"></strong>
+            </div>
+            <div class="bar-track"><div class="bar-fill" id="confBar" style="background:var(--cyan)"></div></div>
+          </div>
+          <div class="stat-info" id="statInfo"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ── Injected by Flask ─────────────────────────────────────────
+const AVAILABLE = {{ available | tojson }};
+const FEATURES  = {{ features  | tojson }};
+
+// ── State ─────────────────────────────────────────────────────
+let activeModel = Object.keys(AVAILABLE)[0];
+
+// ── Presets (representative values per model type) ────────────
+const PRESETS = {
+  kdd: {
+    normal:   {duration:0,protocol_type:'tcp',service:'http',flag:'SF',src_bytes:181,dst_bytes:5450,land:0,wrong_fragment:0,urgent:0,hot:0,num_failed_logins:0,logged_in:1,num_compromised:0,root_shell:0,su_attempted:0,num_root:0,num_file_creations:0,num_shells:0,num_access_files:0,num_outbound_cmds:0,is_host_login:0,is_guest_login:0,count:8,srv_count:8,serror_rate:0,srv_serror_rate:0,rerror_rate:0,srv_rerror_rate:0,same_srv_rate:1,diff_srv_rate:0,srv_diff_host_rate:0,dst_host_count:9,dst_host_srv_count:9,dst_host_same_srv_rate:1,dst_host_diff_srv_rate:0,dst_host_same_src_port_rate:.11,dst_host_srv_diff_host_rate:0,dst_host_serror_rate:0,dst_host_srv_serror_rate:0,dst_host_rerror_rate:0,dst_host_srv_rerror_rate:0},
+    dos:      {duration:0,protocol_type:'tcp',service:'http',flag:'S0',src_bytes:0,dst_bytes:0,land:0,wrong_fragment:0,urgent:0,hot:0,num_failed_logins:0,logged_in:0,num_compromised:0,root_shell:0,su_attempted:0,num_root:0,num_file_creations:0,num_shells:0,num_access_files:0,num_outbound_cmds:0,is_host_login:0,is_guest_login:0,count:511,srv_count:511,serror_rate:1,srv_serror_rate:1,rerror_rate:0,srv_rerror_rate:0,same_srv_rate:1,diff_srv_rate:0,srv_diff_host_rate:0,dst_host_count:255,dst_host_srv_count:255,dst_host_same_srv_rate:1,dst_host_diff_srv_rate:0,dst_host_same_src_port_rate:.01,dst_host_srv_diff_host_rate:0,dst_host_serror_rate:1,dst_host_srv_serror_rate:1,dst_host_rerror_rate:0,dst_host_srv_rerror_rate:0},
+    portscan: {duration:0,protocol_type:'tcp',service:'private',flag:'REJ',src_bytes:0,dst_bytes:0,land:0,wrong_fragment:0,urgent:0,hot:0,num_failed_logins:0,logged_in:0,num_compromised:0,root_shell:0,su_attempted:0,num_root:0,num_file_creations:0,num_shells:0,num_access_files:0,num_outbound_cmds:0,is_host_login:0,is_guest_login:0,count:148,srv_count:1,serror_rate:0,srv_serror_rate:0,rerror_rate:1,srv_rerror_rate:1,same_srv_rate:.01,diff_srv_rate:.06,srv_diff_host_rate:1,dst_host_count:255,dst_host_srv_count:1,dst_host_same_srv_rate:0,dst_host_diff_srv_rate:.01,dst_host_same_src_port_rate:0,dst_host_srv_diff_host_rate:1,dst_host_serror_rate:0,dst_host_srv_serror_rate:0,dst_host_rerror_rate:1,dst_host_srv_rerror_rate:1}
+  },
+  cic: {
+    normal:   {'Flow Duration':120000,'Total Fwd Packets':10,'Total Backward Packets':8,'Total Length of Fwd Packets':1500,'Total Length of Bwd Packets':1200,'Fwd Packet Length Max':200,'Fwd Packet Length Min':50,'Fwd Packet Length Mean':150,'Fwd Packet Length Std':30,'Bwd Packet Length Max':180,'Flow Bytes/s':22000,'Flow Packets/s':150,'Flow IAT Mean':8000,'Flow IAT Std':2000,'Flow IAT Max':20000,'Flow IAT Min':1000,'SYN Flag Count':1,'ACK Flag Count':8,'PSH Flag Count':3},
+    dos:      {'Flow Duration':1000,'Total Fwd Packets':500,'Total Backward Packets':0,'Total Length of Fwd Packets':30000,'Total Length of Bwd Packets':0,'Fwd Packet Length Max':60,'Fwd Packet Length Min':40,'Fwd Packet Length Mean':54,'Fwd Packet Length Std':5,'Bwd Packet Length Max':0,'Flow Bytes/s':30000000,'Flow Packets/s':500000,'Flow IAT Mean':2,'Flow IAT Std':1,'Flow IAT Max':10,'Flow IAT Min':0,'SYN Flag Count':500,'ACK Flag Count':0,'PSH Flag Count':0},
+    portscan: {'Flow Duration':500,'Total Fwd Packets':1,'Total Backward Packets':0,'Total Length of Fwd Packets':40,'Total Length of Bwd Packets':0,'Fwd Packet Length Max':40,'Fwd Packet Length Min':40,'Fwd Packet Length Mean':40,'Fwd Packet Length Std':0,'Bwd Packet Length Max':0,'Flow Bytes/s':80000,'Flow Packets/s':2000,'Flow IAT Mean':500,'Flow IAT Std':0,'Flow IAT Max':500,'Flow IAT Min':500,'SYN Flag Count':1,'ACK Flag Count':0,'PSH Flag Count':0}
+  }
+};
+
+// ── Build sidebar model cards ─────────────────────────────────
+function buildSidebar() {
+  const list = document.getElementById('modelList');
+  list.innerHTML = '';
+  Object.entries(AVAILABLE).forEach(([key, label]) => {
+    const fc  = (FEATURES[key] || []).length;
+    const div = document.createElement('div');
+    div.className = 'model-card' + (key === activeModel ? ' active' : '');
+    div.innerHTML = `
+      <div class="model-card-tag">DATASET</div>
+      <div class="model-card-name">${label}</div>
+      <div class="model-card-feat">${fc} FEATURES</div>
+      <div class="model-card-status"><span class="dot"></span>LOADED</div>`;
+    div.onclick = () => { activeModel = key; buildSidebar(); buildForm(); };
+    list.appendChild(div);
+  });
+}
+
+// ── Status pills ──────────────────────────────────────────────
+function buildStatus() {
+  const el = document.getElementById('statusPills');
+  Object.entries(AVAILABLE).forEach(([key, label]) => {
+    const p = document.createElement('div');
+    p.className = 'pill ok';
+    p.innerHTML = `<span class="pill-dot"></span>${label}`;
+    el.appendChild(p);
+  });
+}
+
+// ── Build form ────────────────────────────────────────────────
+function buildForm() {
+  const features = FEATURES[activeModel] || [];
+  const grid = document.getElementById('formGrid');
+  grid.innerHTML = '';
+
+  features.forEach(name => {
+    const d = document.createElement('div');
+    d.className = 'field';
+    d.innerHTML = `<label title="${name}">${name}</label>
+                   <input type="text" id="f_${CSS.escape(name)}" value="0">`;
+    grid.appendChild(d);
+  });
+
+  document.getElementById('activeBadge').textContent = AVAILABLE[activeModel];
+  document.getElementById('featCount').textContent   = features.length + ' FEATURES';
+  document.getElementById('result').style.display    = 'none';
+}
+
+// ── Presets ───────────────────────────────────────────────────
+function loadPreset(type) {
+  const preset   = (PRESETS[activeModel] || {})[type] || {};
+  const features = FEATURES[activeModel] || [];
+  features.forEach(name => {
+    const el = document.getElementById('f_' + CSS.escape(name));
+    if (el) el.value = preset[name] !== undefined ? preset[name] : 0;
+  });
+}
+
+function clearForm() {
+  (FEATURES[activeModel] || []).forEach(name => {
+    const el = document.getElementById('f_' + CSS.escape(name));
+    if (el) el.value = 0;
+  });
+}
+
+// ── Analyze ───────────────────────────────────────────────────
+async function analyze() {
+  const btn = document.getElementById('runBtn');
+  const sp  = document.getElementById('spinnerWrap');
+  const err = document.getElementById('errMsg');
+  err.textContent = '';
+  btn.disabled = true;
+  sp.style.display = 'inline-block';
+
+  const payload = { model_key: activeModel };
+  (FEATURES[activeModel] || []).forEach(name => {
+    const el = document.getElementById('f_' + CSS.escape(name));
+    payload[name] = el ? el.value : 0;
+  });
+
+  try {
+    const res  = await fetch('/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    showResult(data);
+  } catch(e) {
+    err.textContent = '⚠ ' + e.message;
+  } finally {
+    btn.disabled = false;
+    sp.style.display = 'none';
+  }
+}
+
+// ── Show result ───────────────────────────────────────────────
+function showResult(d) {
+  const isAttack = d.prediction === 'ATTACK';
+  const rm = document.getElementById('resultMain');
+  rm.className        = 'result-main ' + (isAttack ? 'attack' : 'normal');
+  rm.dataset.verdict  = d.prediction;
+
+  document.getElementById('verdictText').textContent = d.prediction;
+
+  const rb = document.getElementById('riskBadge');
+  rb.textContent        = d.risk_level;
+  rb.style.borderColor  = d.risk_color;
+  rb.style.color        = d.risk_color;
+
+  document.getElementById('probVal').textContent  = d.probability + '%';
+  document.getElementById('probBar').style.width  = d.probability + '%';
+  document.getElementById('probBar').style.background = d.risk_color;
+
+  document.getElementById('confVal').textContent  = d.confidence + '%';
+  document.getElementById('confBar').style.width  = d.confidence + '%';
+
+  document.getElementById('statInfo').innerHTML =
+    `<strong>Model:</strong> ${d.model_used}<br>
+     <strong>Decision:</strong> prob ≥ 0.5 → ATTACK<br>
+     <strong>Raw prob:</strong> ${(d.probability/100).toFixed(4)}`;
+
+  const res = document.getElementById('result');
+  res.style.display = 'block';
+  res.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── Init ──────────────────────────────────────────────────────
+buildStatus();
+buildSidebar();
+buildForm();
+</script>
+</body>
+</html>

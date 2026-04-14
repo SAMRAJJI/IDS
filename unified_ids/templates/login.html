@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IDS — Secure Login</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Bebas+Neue&family=DM+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #f5f7fa;
+  --surface:  #ffffff;
+  --surface2: #f0f3f8;
+  --border:   #e1e8f0;
+  --border2:  #d4dce8;
+  --cyan:     #0066cc;
+  --green:    #00a86b;
+  --red:      #d32f2f;
+  --yellow:   #ff9800;
+  --text:     #1a1a1a;
+  --muted:    #666666;
+  --muted2:   #999999;
+  --mono:     'IBM Plex Mono', monospace;
+  --display:  'Bebas Neue', sans-serif;
+  --body:     'DM Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.login-shell {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 520px;
+  padding: 2rem;
+}
+
+/* header */
+.login-header { 
+  text-align: center; 
+  margin-bottom: 3rem; 
+}
+.logo-top {
+  font-family: var(--mono); 
+  font-size: 0.75rem;
+  letter-spacing: 0.15em; 
+  color: var(--cyan); 
+  margin-bottom: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.logo-main {
+  font-family: var(--display); 
+  font-size: 3.5rem;
+  letter-spacing: 0.1em; 
+  color: var(--text);
+  font-weight: 700;
+  line-height: 1;
+}
+.logo-main span { color: var(--cyan); }
+.logo-sub {
+  font-family: var(--mono); 
+  font-size: 0.8rem;
+  letter-spacing: 0.12em; 
+  color: var(--muted);
+  margin-top: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* card */
+.card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+/* steps indicator */
+.steps {
+  display: flex;
+  border-bottom: 1.5px solid var(--border);
+  background: var(--surface2);
+}
+.step {
+  flex: 1; 
+  padding: 1.2rem;
+  text-align: center;
+  font-family: var(--mono); 
+  font-size: 0.75rem;
+  letter-spacing: 0.12em; 
+  color: var(--muted);
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.step.active { 
+  color: var(--cyan); 
+  border-bottom-color: var(--cyan);
+}
+.step.done { 
+  color: var(--green); 
+  border-bottom-color: var(--green);
+}
+.step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 50%;
+  border: 1.5px solid currentColor;
+  font-size: 0.7rem; 
+  margin-bottom: 0.4rem;
+  font-weight: 700;
+}
+
+/* panels */
+.panel { 
+  display: none; 
+  padding: 2.5rem; 
+}
+.panel.active { 
+  display: block; 
+  animation: fadein 0.3s ease; 
+}
+@keyframes fadein { 
+  from {
+    opacity: 0;
+    transform: translateY(8px)
+  } 
+  to {
+    opacity: 1;
+    transform: none
+  } 
+}
+
+.panel-title {
+  font-family: var(--body); 
+  font-size: 0.95rem;
+  letter-spacing: 0; 
+  color: var(--text);
+  margin-bottom: 2rem;
+  font-weight: 700;
+}
+
+/* username field */
+.field { 
+  margin-bottom: 1.5rem; 
+}
+.field label {
+  display: block; 
+  font-family: var(--body);
+  font-size: 0.85rem; 
+  letter-spacing: 0;
+  color: var(--text); 
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+}
+.field input {
+  width: 100%; 
+  background: var(--surface2);
+  border: 1.5px solid var(--border); 
+  color: var(--text);
+  padding: 0.8rem 1rem; 
+  font-family: var(--body);
+  font-size: 0.9rem; 
+  border-radius: 5px; 
+  outline: none;
+  transition: all 0.2s;
+}
+.field input:focus { 
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(0,102,204,0.1);
+}
+
+/* webcam */
+.cam-wrap {
+  position: relative;
+  width: 100%; 
+  aspect-ratio: 4/3;
+  background: #000;
+  border-radius: 6px; 
+  overflow: hidden;
+  border: 1.5px solid var(--border);
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+#video { width: 100%; height: 100%; object-fit: cover; display: block; }
+#canvas { display: none; }
+
+.cam-overlay {
+  position: absolute; 
+  inset: 0;
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+  pointer-events: none;
+}
+.face-guide {
+  width: 180px; 
+  height: 220px;
+  border: 2px solid rgba(0,102,204,0.6);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2000px rgba(0,0,0,0.4);
+  transition: border-color 0.3s;
+}
+.face-guide.scanning {
+  border-color: var(--yellow);
+  animation: pulse-guide 1s ease-in-out infinite;
+}
+.face-guide.success { 
+  border-color: var(--green); 
+}
+.face-guide.fail { 
+  border-color: var(--red); 
+}
+@keyframes pulse-guide {
+  0%,100%{ 
+    box-shadow: 0 0 0 2000px rgba(0,0,0,0.4), 0 0 20px rgba(255,152,0,0.3); 
+  }
+  50% { 
+    box-shadow: 0 0 0 2000px rgba(0,0,0,0.4), 0 0 40px rgba(255,152,0,0.6); 
+  }
+}
+
+.cam-status {
+  font-family: var(--body); 
+  font-size: 0.85rem;
+  letter-spacing: 0; 
+  text-align: center;
+  margin-bottom: 1.2rem; 
+  min-height: 1.4em;
+  transition: color 0.3s;
+  font-weight: 600;
+}
+.cam-status.info { color: var(--muted); }
+.cam-status.scanning { color: var(--yellow); }
+.cam-status.ok { color: var(--green); }
+.cam-status.fail { color: var(--red); }
+
+/* buttons */
+.btn {
+  width: 100%; 
+  padding: 0.9rem;
+  font-family: var(--body); 
+  font-size: 0.9rem;
+  letter-spacing: 0; 
+  text-transform: uppercase;
+  border: none; 
+  border-radius: 5px;
+  cursor: pointer; 
+  transition: all 0.2s;
+  position: relative; 
+  overflow: hidden;
+  font-weight: 700;
+}
+.btn-primary { 
+  background: var(--cyan); 
+  color: #fff; 
+  box-shadow: 0 2px 8px rgba(0,102,204,0.25);
+}
+.btn-primary:hover { 
+  background: var(--cyan); 
+  box-shadow: 0 4px 16px rgba(0,102,204,0.4);
+  transform: translateY(-2px);
+}
+.btn-primary:disabled { 
+  opacity: 0.5; 
+  cursor: not-allowed; 
+}
+.btn-ghost {
+  background: var(--surface2); 
+  color: var(--text);
+  border: 1.5px solid var(--border); 
+  margin-top: 0.8rem;
+}
+.btn-ghost:hover { 
+  border-color: var(--cyan); 
+  color: var(--cyan);
+  background: rgba(0,102,204,0.06);
+}
+
+/* spinner */
+.spinner {
+  display: inline-block; 
+  width: 14px; 
+  height: 14px;
+  border: 2.5px solid rgba(0,102,204,0.2); 
+  border-top-color: #fff;
+  border-radius: 50%; 
+  animation: spin 0.7s linear infinite;
+  margin-right: 0.6rem; 
+  vertical-align: middle;
+}
+@keyframes spin { 
+  to {
+    transform: rotate(360deg) 
+  } 
+}
+
+/* error banner */
+.error-banner {
+  background: rgba(211,47,47,0.08);
+  border: 1.5px solid rgba(211,47,47,0.3);
+  border-radius: 5px; 
+  padding: 1rem 1.2rem;
+  font-family: var(--body); 
+  font-size: 0.85rem;
+  color: var(--red); 
+  margin-bottom: 1.5rem;
+  display: flex; 
+  align-items: center; 
+  gap: 0.8rem;
+  font-weight: 600;
+}
+
+/* success overlay */
+.success-panel {
+  text-align: center; 
+  padding: 3rem 2rem;
+}
+.success-icon {
+  font-size: 3.5rem; 
+  margin-bottom: 1.2rem;
+  animation: pop 0.4s cubic-bezier(0.17,0.67,0.32,1.4);
+}
+@keyframes pop { 
+  from {
+    transform: scale(0)
+  } 
+  to {
+    transform: scale(1)
+  } 
+}
+.success-title {
+  font-family: var(--display); 
+  font-size: 2.2rem;
+  color: var(--green); 
+  letter-spacing: 0.08em;
+  margin-bottom: 0.6rem;
+  font-weight: 700;
+}
+.success-sub {
+  font-family: var(--body); 
+  font-size: 0.9rem;
+  color: var(--muted); 
+  letter-spacing: 0;
+  font-weight: 500;
+}
+</style>
+</head>
+<body>
+<div class="login-shell">
+
+  <div class="login-header">
+    <div class="logo-top">SECURE ACCESS</div>
+    <div class="logo-main">I<span>D</span>S</div>
+    <div class="logo-sub">DUAL-FACTOR AUTHENTICATION</div>
+  </div>
+
+  <div class="card">
+
+    <!-- Steps bar -->
+    <div class="steps">
+      <div class="step active" id="step1-tab">
+        <div class="step-num">1</div><br>FACE SCAN
+      </div>
+      <div class="step" id="step2-tab">
+        <div class="step-num">2</div><br>PASSWORD
+      </div>
+    </div>
+
+    <!-- Server-side error (e.g. no admin registered) -->
+    {% if error %}
+    <div style="padding:1.5rem 2rem 0">
+      <div class="error-banner">⚠ {{ error }}</div>
+    </div>
+    {% endif %}
+
+    <!-- ── PANEL 1: Face scan ── -->
+    <div class="panel active" id="panel1">
+      <div class="panel-title">STEP 1 — FACE VERIFICATION</div>
+
+      <div class="field">
+        <label>USERNAME</label>
+        <input type="text" id="username" placeholder="admin" autocomplete="off">
+      </div>
+
+      <div class="cam-wrap">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="canvas"></canvas>
+        <div class="cam-overlay">
+          <div class="face-guide" id="faceGuide"></div>
+        </div>
+      </div>
+
+      <div class="cam-status info" id="camStatus">Position your face inside the oval</div>
+
+      <button class="btn btn-primary" id="scanBtn" onclick="scanFace()">
+        SCAN FACE
+      </button>
+    </div>
+
+    <!-- ── PANEL 2: Password ── -->
+    <div class="panel" id="panel2">
+      <div class="panel-title">STEP 2 — PASSWORD VERIFICATION</div>
+
+      <div style="display:flex;align-items:center;gap:.8rem;margin-bottom:1.5rem;
+                  padding:.8rem 1rem;background:rgba(0,255,136,.05);
+                  border:1px solid rgba(0,255,136,.2);border-radius:4px;">
+        <span style="color:var(--green);font-size:1.2rem">✓</span>
+        <span style="font-family:var(--mono);font-size:.65rem;color:var(--green);letter-spacing:.1em">
+          FACE VERIFIED SUCCESSFULLY
+        </span>
+      </div>
+
+      <div class="field">
+        <label>PASSWORD</label>
+        <input type="password" id="password" placeholder="••••••••"
+               onkeydown="if(event.key==='Enter') submitLogin()">
+      </div>
+
+      <div class="error-banner" id="pwError" style="display:none"></div>
+
+      <button class="btn btn-primary" id="loginBtn" onclick="submitLogin()">
+        AUTHENTICATE
+      </button>
+      <button class="btn btn-ghost" onclick="resetToStep1()">
+        ← BACK TO FACE SCAN
+      </button>
+    </div>
+
+    <!-- ── PANEL 3: Success ── -->
+    <div class="panel" id="panel3">
+      <div class="success-panel">
+        <div class="success-icon">🛡️</div>
+        <div class="success-title">ACCESS GRANTED</div>
+        <div class="success-sub" style="margin-top:.5rem">Redirecting to dashboard...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let verifiedUsername = null;
+
+// ── Start webcam ──────────────────────────────────────────────
+async function startCam() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    document.getElementById('video').srcObject = stream;
+  } catch(e) {
+    setStatus('Cannot access webcam: ' + e.message, 'fail');
+  }
+}
+
+// ── Capture frame and send to server ─────────────────────────
+async function scanFace() {
+  const username = document.getElementById('username').value.trim();
+  if (!username) {
+    setStatus('Enter your username first', 'fail');
+    return;
+  }
+
+  const btn   = document.getElementById('scanBtn');
+  const guide = document.getElementById('faceGuide');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>SCANNING...';
+  guide.className = 'face-guide scanning';
+  setStatus('Scanning face — hold still...', 'scanning');
+
+  // Capture frame
+  const video  = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  canvas.width  = video.videoWidth  || 640;
+  canvas.height = video.videoHeight || 480;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  const image = canvas.toDataURL('image/jpeg', 0.85);
+
+  try {
+    const res  = await fetch('/auth/verify_face', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, image })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      guide.className = 'face-guide success';
+      setStatus('Face verified! Proceeding to password...', 'ok');
+      verifiedUsername = username;
+      setTimeout(goToStep2, 900);
+    } else {
+      guide.className = 'face-guide fail';
+      setStatus('✗ ' + (data.error || 'Face not recognised'), 'fail');
+      setTimeout(() => {
+        guide.className = 'face-guide';
+        setStatus('Position your face inside the oval', 'info');
+      }, 2500);
+    }
+  } catch(e) {
+    setStatus('Server error: ' + e.message, 'fail');
+    guide.className = 'face-guide';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'SCAN FACE';
+  }
+}
+
+// ── Step transitions ──────────────────────────────────────────
+function goToStep2() {
+  document.getElementById('panel1').classList.remove('active');
+  document.getElementById('panel2').classList.add('active');
+  document.getElementById('step1-tab').className = 'step done';
+  document.getElementById('step2-tab').className = 'step active';
+  setTimeout(() => document.getElementById('password').focus(), 100);
+}
+
+function resetToStep1() {
+  document.getElementById('panel2').classList.remove('active');
+  document.getElementById('panel1').classList.add('active');
+  document.getElementById('step1-tab').className = 'step active';
+  document.getElementById('step2-tab').className = 'step';
+  document.getElementById('password').value = '';
+  document.getElementById('pwError').style.display = 'none';
+  document.getElementById('faceGuide').className = 'face-guide';
+  setStatus('Position your face inside the oval', 'info');
+  verifiedUsername = null;
+}
+
+// ── Password submit ───────────────────────────────────────────
+async function submitLogin() {
+  const password = document.getElementById('password').value;
+  if (!password) return;
+
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>VERIFYING...';
+  document.getElementById('pwError').style.display = 'none';
+
+  try {
+    const res  = await fetch('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: verifiedUsername, password })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      document.getElementById('panel2').classList.remove('active');
+      document.getElementById('panel3').classList.add('active');
+      document.getElementById('step2-tab').className = 'step done';
+      setTimeout(() => window.location.href = '/', 1200);
+    } else {
+      const err = document.getElementById('pwError');
+      err.textContent = '⚠ ' + (data.error || 'Authentication failed');
+      err.style.display = 'flex';
+    }
+  } catch(e) {
+    const err = document.getElementById('pwError');
+    err.textContent = '⚠ Server error: ' + e.message;
+    err.style.display = 'flex';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'AUTHENTICATE';
+  }
+}
+
+function setStatus(msg, type) {
+  const el = document.getElementById('camStatus');
+  el.textContent  = msg;
+  el.className    = 'cam-status ' + type;
+}
+
+// ── Init ──────────────────────────────────────────────────────
+startCam();
+</script>
+</body>
+</html>

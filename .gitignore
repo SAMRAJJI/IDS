@@ -1,0 +1,9 @@
+env/
+*/data/
+*/logs/
+*/results/
+*.h5
+*.csv
+*.arff
+__pycache__/
+*.pyc
