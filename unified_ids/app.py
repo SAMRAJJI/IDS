@@ -4,7 +4,7 @@ Supports: NSL-KDD  |  CIC-IDS2017
 
 Folder layout:
   IDS with DL/
-  ├── ids/models/                       ← NSL-KDD (best_model.keras, preprocessor.pkl)
+  ├── ids/models/                       ← NSL-KDD (best_model.h5, scaler.pkl, label_encoders.pkl)
   ├── IDS with DL - CIC2017/models/     ← CIC     (best_model.h5, scaler.pkl, feature_columns.pkl)
   └── unified_ids/                      ← THIS APP
       ├── app.py
@@ -27,18 +27,24 @@ app = Flask(__name__)
 # ── Absolute base = "IDS with DL/" ────────────────────────────
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-KDD_MODELS_DIR = os.path.join(BASE, 'ids', 'models' , 'saved_models')
+KDD_MODELS_DIR = os.path.join(BASE, 'ids', 'models')
 CIC_MODELS_DIR = os.path.join(BASE, 'IDS with DL - CIC2017', 'models')
 
-# ── Inline DataPreprocessor so joblib can unpickle without
-#    needing the original preprocessing.py on sys.path ─────────
-class DataPreprocessor(BaseEstimator):
-    def __init__(self):
-        self.label_encoders   = {}
-        self.scaler           = StandardScaler()
-        self.feature_columns  = None
-        self.col_names        = []
-        self.categorical_cols = ['protocol_type', 'service', 'flag']
+KDD_FEATURE_NAMES = [
+    'duration', 'protocol_type', 'service', 'flag', 'src_bytes',
+    'dst_bytes', 'land', 'wrong_fragment', 'urgent', 'hot',
+    'num_failed_logins', 'logged_in', 'num_compromised', 'root_shell',
+    'su_attempted', 'num_root', 'num_file_creations', 'num_shells',
+    'num_access_files', 'num_outbound_cmds', 'is_host_login',
+    'is_guest_login', 'count', 'srv_count', 'serror_rate',
+    'srv_serror_rate', 'rerror_rate', 'srv_rerror_rate', 'same_srv_rate',
+    'diff_srv_rate', 'srv_diff_host_rate', 'dst_host_count',
+    'dst_host_srv_count', 'dst_host_same_srv_rate',
+    'dst_host_diff_srv_rate', 'dst_host_same_src_port_rate',
+    'dst_host_srv_diff_host_rate', 'dst_host_serror_rate',
+    'dst_host_srv_serror_rate', 'dst_host_rerror_rate',
+    'dst_host_srv_rerror_rate'
+]
 
 # ─────────────────────────────────────────────────────────────
 #  Load both models
@@ -48,22 +54,26 @@ MODELS = {}
 # ── NSL-KDD ───────────────────────────────────────────────────
 try:
     print("Loading NSL-KDD ...")
-    kdd_model_path = os.path.join(KDD_MODELS_DIR, 'best_model.keras')
-    kdd_prep_path  = os.path.join(KDD_MODELS_DIR, 'preprocessor.pkl')
-    print(f"  model : {kdd_model_path}")
-    print(f"  prep  : {kdd_prep_path}")
+    kdd_model_path    = os.path.join(KDD_MODELS_DIR, 'best_model.h5')
+    kdd_scaler_path   = os.path.join(KDD_MODELS_DIR, 'scaler.pkl')
+    kdd_encoders_path = os.path.join(KDD_MODELS_DIR, 'label_encoders.pkl')
+    print(f"  model  : {kdd_model_path}")
+    print(f"  scaler : {kdd_scaler_path}")
+    print(f"  encoders: {kdd_encoders_path}")
 
-    sys.path.insert(0, os.path.join(BASE, 'ids'))
     kdd_model = tf.keras.models.load_model(kdd_model_path, compile=False)
-    prep = joblib.load(kdd_prep_path)
-    sys.path.pop(0)
+    with open(kdd_scaler_path, 'rb') as f:
+        kdd_scaler = pickle.load(f)
+    with open(kdd_encoders_path, 'rb') as f:
+        kdd_encoders = pickle.load(f)
+
     MODELS['kdd'] = {
         'model':         kdd_model,
-        'scaler':        prep.scaler,
-        'feature_names': prep.feature_columns,
-        'encoders':      prep.label_encoders,
+        'scaler':        kdd_scaler,
+        'feature_names': KDD_FEATURE_NAMES,
+        'encoders':      kdd_encoders,
     }
-    print(f"  ✓ NSL-KDD ready  ({len(prep.feature_columns)} features)")
+    print(f"  ✓ NSL-KDD ready  ({len(KDD_FEATURE_NAMES)} features)")
 
 except Exception as e:
     print(f"  ✗ NSL-KDD failed: {e}")

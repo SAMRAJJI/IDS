@@ -24,9 +24,25 @@ app.secret_key = secrets.token_hex(32)   # random each restart; fine for single-
 
 # ── Paths ──────────────────────────────────────────────────────
 BASE           = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-KDD_MODELS_DIR = os.path.join(BASE, 'ids', 'models', 'saved_models')
+KDD_MODELS_DIR = os.path.join(BASE, 'ids', 'models')
 CIC_MODELS_DIR = os.path.join(BASE, 'IDS with DL - CIC2017', 'models')
 USERS_FILE     = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'users.json')
+
+KDD_FEATURE_NAMES = [
+    'duration', 'protocol_type', 'service', 'flag', 'src_bytes',
+    'dst_bytes', 'land', 'wrong_fragment', 'urgent', 'hot',
+    'num_failed_logins', 'logged_in', 'num_compromised', 'root_shell',
+    'su_attempted', 'num_root', 'num_file_creations', 'num_shells',
+    'num_access_files', 'num_outbound_cmds', 'is_host_login',
+    'is_guest_login', 'count', 'srv_count', 'serror_rate',
+    'srv_serror_rate', 'rerror_rate', 'srv_rerror_rate', 'same_srv_rate',
+    'diff_srv_rate', 'srv_diff_host_rate', 'dst_host_count',
+    'dst_host_srv_count', 'dst_host_same_srv_rate',
+    'dst_host_diff_srv_rate', 'dst_host_same_src_port_rate',
+    'dst_host_srv_diff_host_rate', 'dst_host_serror_rate',
+    'dst_host_srv_serror_rate', 'dst_host_rerror_rate',
+    'dst_host_srv_rerror_rate'
+]
 
 # ── Inline DataPreprocessor so joblib can unpickle KDD prep ───
 class DataPreprocessor(BaseEstimator):
@@ -44,16 +60,23 @@ MODELS = {}
 
 try:
     print("Loading NSL-KDD ...")
-    sys.path.insert(0, os.path.join(BASE, 'ids'))
-    kdd_model = tf.keras.models.load_model(
-        os.path.join(KDD_MODELS_DIR, 'best_model.keras'), compile=False)
-    prep = joblib.load(os.path.join(KDD_MODELS_DIR, 'preprocessor.pkl'))
-    sys.path.pop(0)
+    kdd_model_path    = os.path.join(KDD_MODELS_DIR, 'best_model.h5')
+    kdd_scaler_path   = os.path.join(KDD_MODELS_DIR, 'scaler.pkl')
+    kdd_encoders_path = os.path.join(KDD_MODELS_DIR, 'label_encoders.pkl')
+    print(f"  model  : {kdd_model_path}")
+    print(f"  scaler : {kdd_scaler_path}")
+    print(f"  encoders: {kdd_encoders_path}")
+
+    kdd_model = tf.keras.models.load_model(kdd_model_path, compile=False)
+    with open(kdd_scaler_path, 'rb') as f:
+        kdd_scaler = pickle.load(f)
+    with open(kdd_encoders_path, 'rb') as f:
+        kdd_encoders = pickle.load(f)
     MODELS['kdd'] = {
-        'model': kdd_model, 'scaler': prep.scaler,
-        'feature_names': prep.feature_columns, 'encoders': prep.label_encoders,
+        'model': kdd_model, 'scaler': kdd_scaler,
+        'feature_names': KDD_FEATURE_NAMES, 'encoders': kdd_encoders,
     }
-    print(f"  ✓ NSL-KDD ready  ({len(prep.feature_columns)} features)")
+    print(f"  ✓ NSL-KDD ready  ({len(KDD_FEATURE_NAMES)} features)")
 except Exception as e:
     print(f"  ✗ NSL-KDD failed: {e}")
 

@@ -24,6 +24,7 @@ doc.add_paragraph(
     "- IDS with DL - CIC2017/: Implementation using CIC-IDS2017 dataset with AE-DNN model\n"
     "- unified_ids/: Unified Flask application supporting both datasets\n"
     "- SNN.ipynb: Jupyter notebook exploring Spiking Neural Networks for IDS\n"
+    "- cic_sample_inspection.ipynb & cic_sample_inspection2.ipynb: Data exploration notebooks\n"
     "- env/: Python virtual environment"
 )
 
@@ -43,10 +44,179 @@ libraries = [
     "Joblib (Model serialization)",
     "Matplotlib (Plotting)",
     "Seaborn (Statistical visualization)",
-    "python-docx (Document generation)"
+    "python-docx (Document generation)",
+    "OpenCV (Computer vision for face recognition)",
+    "face_recognition (Face detection library)",
+    "bcrypt (Password hashing)"
 ]
 for lib in libraries:
     doc.add_paragraph(lib, style='List Bullet')
+
+# Datasets Used
+doc.add_heading('4. Datasets Used', level=1)
+
+doc.add_heading('NSL-KDD Dataset:', level=2)
+doc.add_paragraph(
+    "The NSL-KDD dataset is an improved version of the KDD Cup 1999 dataset. "
+    "It contains 41 features extracted from network traffic, including basic features, "
+    "content features, and traffic features. The dataset includes various attack types "
+    "such as DoS, Probe, R2L, and U2R attacks."
+)
+
+doc.add_heading('CIC-IDS2017 Dataset:', level=2)
+doc.add_paragraph(
+    "The CIC-IDS2017 dataset was created by the Canadian Institute for Cybersecurity. "
+    "It contains modern attack scenarios including DoS, DDoS, Brute Force, XSS, SQL Injection, "
+    "and infiltration attacks. The dataset has 78 features and covers traffic from Monday to Friday."
+)
+
+# Model Architectures
+doc.add_heading('5. Model Architectures', level=1)
+
+doc.add_heading('AE-DNN (Attention-Enhanced Deep Neural Network):', level=2)
+doc.add_paragraph(
+    "The AE-DNN model incorporates attention mechanisms to focus on important features. "
+    "Architecture includes:\n"
+    "- Dense layers with batch normalization and dropout\n"
+    "- Multi-head attention layers\n"
+    "- Residual connections\n"
+    "- Output layer with sigmoid activation for binary classification"
+)
+
+doc.add_heading('Simple DNN:', level=2)
+doc.add_paragraph(
+    "A simpler deep neural network architecture used for baseline comparison. "
+    "Consists of multiple dense layers with ReLU activation and dropout regularization."
+)
+
+# Training Results
+doc.add_heading('6. Training Results', level=1)
+
+doc.add_heading('NSL-KDD Model Performance:', level=2)
+doc.add_paragraph(
+    "After 33 epochs of training:\n"
+    "- Final Training Accuracy: 99.08%\n"
+    "- Final Validation Accuracy: 99.05%\n"
+    "- Final Training Loss: 0.022\n"
+    "- Final Validation Loss: 0.028\n"
+    "- AUC Score: 0.9994"
+)
+
+doc.add_heading('CIC-IDS2017 Model Performance:', level=2)
+doc.add_paragraph(
+    "After 20 epochs of training:\n"
+    "- Final Training Accuracy: 96.80%\n"
+    "- Final Validation Accuracy: 96.97%\n"
+    "- Final Training Loss: 0.058\n"
+    "- Final Validation Loss: 0.055\n"
+    "- AUC Score: 0.9975"
+)
+
+# Web Applications
+doc.add_heading('7. Web Applications', level=1)
+
+doc.add_heading('Individual Dataset Applications:', level=2)
+doc.add_paragraph(
+    "Separate Flask applications for each dataset:\n"
+    "- ids/app.py: NSL-KDD prediction interface\n"
+    "- IDS with DL - CIC2017/app.py: CIC-IDS2017 prediction interface\n"
+    "Both applications provide web forms for inputting network features and real-time prediction."
+)
+
+doc.add_heading('Unified Application:', level=2)
+doc.add_paragraph(
+    "The unified_ids/ application combines both models in a single interface. "
+    "Features include:\n"
+    "- Support for both NSL-KDD and CIC-IDS2017 datasets\n"
+    "- Face recognition authentication for admin access\n"
+    "- Password-based authentication\n"
+    "- User management system\n"
+    "- Real-time prediction capabilities"
+)
+
+# Authentication System
+doc.add_heading('8. Authentication System', level=1)
+doc.add_paragraph(
+    "The unified application includes a multi-modal authentication system:\n"
+    "- Face recognition using OpenCV and face_recognition library\n"
+    "- Password authentication with bcrypt hashing\n"
+    "- Admin setup script for initial face registration\n"
+    "- User management with JSON-based storage"
+)
+
+# Data Preprocessing
+doc.add_heading('9. Data Preprocessing', level=1)
+doc.add_paragraph(
+    "Comprehensive preprocessing pipelines for both datasets:\n"
+    "- Categorical feature encoding using LabelEncoder\n"
+    "- Numerical feature scaling using StandardScaler\n"
+    "- Handling of missing values and outliers\n"
+    "- Feature selection and engineering\n"
+    "- Train/validation/test split (70/15/15)"
+)
+
+# UI Presets
+doc.add_heading('10. UI Presets', level=1)
+doc.add_paragraph(
+    "Pre-configured input presets for common attack scenarios:\n"
+    "- Normal traffic patterns\n"
+    "- DoS (Denial of Service) attacks\n"
+    "- DDoS (Distributed DoS) attacks\n"
+    "- Port scanning attacks\n"
+    "- Brute force attacks\n"
+    "Presets stored in cic_cic_js_presets.txt and cic_cic_presets.json files"
+)
+
+# Future Work
+doc.add_heading('11. Future Work', level=1)
+doc.add_paragraph(
+    "Potential enhancements and extensions:\n"
+    "- Implementation of Spiking Neural Networks (SNN) for IDS\n"
+    "- Integration of additional datasets\n"
+    "- Real-time network traffic monitoring\n"
+    "- Ensemble model approaches\n"
+    "- Explainable AI techniques for intrusion detection\n"
+    "- Deployment on cloud platforms"
+)
+
+# How to Run
+doc.add_heading('12. How to Run the Project', level=1)
+
+doc.add_heading('Training Models:', level=2)
+doc.add_paragraph(
+    "For NSL-KDD:\n"
+    "cd ids\n"
+    "python main.py\n"
+    "\n"
+    "For CIC-IDS2017:\n"
+    "cd IDS with DL - CIC2017\n"
+    "python main.py"
+)
+
+doc.add_heading('Running Web Applications:', level=2)
+doc.add_paragraph(
+    "Individual apps:\n"
+    "python app.py (from respective directories)\n"
+    "\n"
+    "Unified app:\n"
+    "cd unified_ids\n"
+    "python setup_admin.py  # First time only\n"
+    "python app.py"
+)
+
+# Conclusion
+doc.add_heading('13. Conclusion', level=1)
+doc.add_paragraph(
+    "This project demonstrates a comprehensive approach to intrusion detection using deep learning. "
+    "It successfully implements multiple model architectures on different datasets, achieving high accuracy "
+    "scores. The web interfaces provide user-friendly access to the prediction capabilities, and the "
+    "authentication system ensures secure access. The modular design allows for easy extension and "
+    "integration of new datasets and models."
+)
+
+# Save the document
+doc.save('IDS_Project_Documentation.docx')
+print("Documentation saved as 'IDS_Project_Documentation.docx'")
 
 doc.add_heading('Tools:', level=2)
 tools = [
